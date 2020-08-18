@@ -4,6 +4,7 @@
 package html2md
 
 import (
+	"log"
 	"strings"
 
 	"fmt"
@@ -89,7 +90,7 @@ func depress(md string, maps map[string]string) string {
 // trip attr
 func trimAttr(doc *goquery.Document) *goquery.Document {
 	attrs := []string{
-		"border", "colspan", "rowspan", "style", "cellspacing",
+		"border", /*"colspan", "rowspan",*/ "style", "cellspacing",
 		"cellpadding", "bgcolor", "width", "align", "frame", "id", "class",
 	}
 	elements := []string{
@@ -304,9 +305,18 @@ func handleHead(doc *goquery.Document) *goquery.Document {
 func handleClosedTag(doc *goquery.Document) *goquery.Document {
 	for tag, close := range closeTag {
 		doc.Find(tag).Each(func(i int, selection *goquery.Selection) {
-			if text, _ := selection.Html(); strings.TrimSpace(text) != "" {
+			text, e := selection.Html()
+			if nil != e {
+				log.Println(e)
+			}
+			if strings.TrimSpace(text) != "" {
 				selection.BeforeHtml(close + text + close)
 			}
+
+			if tag == "br" {
+				selection.BeforeHtml(close + close)
+			}
+
 			selection.Remove()
 		})
 	}
