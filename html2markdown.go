@@ -16,15 +16,16 @@ import (
 )
 
 var closeTag = map[string]string{
-	"del":    "~~",
-	"b":      "**",
-	"strong": "**",
-	"i":      "_",
-	"em":     "_",
-	"dfn":    "_",
-	"var":    "_",
-	"cite":   "_",
-	"br":     "\n",
+	"del":      "~~",
+	"b":        "**",
+	"strong":   "**",
+	"i":        "_",
+	"em":       "_",
+	"dfn":      "_",
+	"var":      "_",
+	"cite":     "_",
+	"br":       "\n",
+	"strotyle": "",
 }
 
 var blockTag = []string{
@@ -44,6 +45,7 @@ func Convert(htmlstr string) (md string) {
 	doc, _ := goquery.NewDocumentFromReader(strings.NewReader(htmlstr))
 	doc = trimAttr(doc)
 	doc, maps = compress(doc)
+	doc = handleSpan(doc)      //<span>
 	doc = handleNextLine(doc)  //<div>...
 	doc = handleBlockTag(doc)  //<div>...
 	doc = handleA(doc)         //<a>
@@ -84,13 +86,16 @@ func depress(md string, maps map[string]string) string {
 		md = strings.Replace(md, "<span>", "", -1)
 		md = strings.Replace(md, "</span>", "", -1)
 	}
+
+	md = strings.ReplaceAll(md, " = ", "=")
+
 	return md
 }
 
 // trip attr
 func trimAttr(doc *goquery.Document) *goquery.Document {
 	attrs := []string{
-		"border", /*"colspan", "rowspan",*/ "style", "cellspacing",
+		"border" /*"colspan", "rowspan",*/, "style", "cellspacing",
 		"cellpadding", "bgcolor", "width", "align", "frame", "id", "class",
 	}
 	elements := []string{
@@ -156,6 +161,7 @@ func compress(doc *goquery.Document) (*goquery.Document, map[string]string) {
 	}
 
 	htmlstr, _ := doc.Html()
+	htmlstr = strings.Replace(htmlstr, "=", " = ", -1)
 	htmlstr = strings.Replace(htmlstr, "\n", "", -1)
 	htmlstr = strings.Replace(htmlstr, "\r", "", -1)
 	htmlstr = strings.Replace(htmlstr, "\t", "", -1)
@@ -221,6 +227,18 @@ func handleA(doc *goquery.Document) *goquery.Document {
 				selection.Remove()
 			}
 		}
+	})
+	return doc
+}
+
+func handleSpan(doc *goquery.Document) *goquery.Document {
+	doc.Find("span").Each(func(i int, selection *goquery.Selection) {
+		//if href, ok := selection.Attr("href"); ok {
+		txt := selection.Text()
+		md := fmt.Sprintf(`%v`, txt)
+		selection.BeforeHtml(md)
+		selection.Remove()
+		//}
 	})
 	return doc
 }
